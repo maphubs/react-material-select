@@ -17,7 +17,7 @@ class ReactMaterialSelect extends Component {
         this.state = {
             isOpen: false,
             rmsListTopValue: 0,
-            rmsListMaxHeight: '100vh',
+            rmsListMaxHeight: 'none',
             isSelected: selectedValue,
             selected: {
                 label: selectedValue ? selectedValue.label : props.label,
@@ -48,8 +48,12 @@ class ReactMaterialSelect extends Component {
     }
 
     componentDidUpdate(prevProps, prevState) {
-        if (this.refs.rmsList && prevState.isOpen !== this.state.isOpen) {
+        if (this.refs.rmsList && !prevState.isOpen && this.state.isOpen) {
+            // opening list
             this.countTopRmsList()
+        } else if (prevState.isOpen && !this.state.isOpen) {
+            // closing list
+            this.setState({rmsListTopValue: 0})
         }
     }
     // the simplest way to get selected value
@@ -146,16 +150,25 @@ class ReactMaterialSelect extends Component {
     countTopRmsList() {
         let bottomMargin = 40
         let bodyHeight = document.body.offsetHeight
-        let listHeight = this.refs.rmsList.offsetHeight
+        let rect = this.refs.rmsListInner.getBoundingClientRect()
+        let bottom = rect.bottom
+        let top = rect.top
+        let listHeight = bottom - top
         let rmsListTopValue = 0
-        if (bodyHeight - this.refs.rmsList.getBoundingClientRect().bottom <= listHeight) {
-            if (listHeight > bodyHeight) {
-                rmsListTopValue = -bodyHeight / 2
+        if (bodyHeight - bottom <= listHeight) {
+            if ((listHeight + bottomMargin) > bodyHeight) {
+                if (top === 0) {
+                    rmsListTopValue = top
+                } else {
+                    rmsListTopValue = -top
+                }
             } else {
                 rmsListTopValue = -listHeight / 2 - bottomMargin
             }
-
         }
+
+        // rmsListTopValue: document.body.offsetHeight - this.refs.rmsList.getBoundingClientRect().bottom > this.refs.rmsList.offsetHeight ? 0 : -this.refs.rmsList.offsetHeight / 2 - bottomMargin,
+
 
         this.setState({
             rmsListTopValue: rmsListTopValue,
@@ -173,7 +186,8 @@ class ReactMaterialSelect extends Component {
             </div>
             <label className="rms-label">{label}</label>
             <i className="rms-caret">arrow_drop_down</i>
-            {this.state.isOpen && <ul ref="rmsList" className='rms-list' style={{ top: this.state.rmsListTopValue, maxHeight: this.state.rmsListMaxHeight}}>
+            {this.state.isOpen && <ul ref="rmsList" className='rms-list' style={{ top: this.state.rmsListTopValue, maxHeight: '100vh', overflowY: 'auto'}}>
+                <div ref="rmsListInner">
                 {
                     resetLabel
                         && <li className="rms-item rms-item__reset" onMouseDown={this.handleResetSelect} onClick={this.handleResetSelect}>
@@ -186,6 +200,7 @@ class ReactMaterialSelect extends Component {
                         {opt.label}
                     </li>
                 })}
+            </div>
             </ul>}
         </div>
     }
